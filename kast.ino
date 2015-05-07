@@ -60,7 +60,7 @@ void loop() {
     }
 
     // Handle the two buttons:
-    manualMode = digitalRead(MANUALMODE);
+    manualMode = !digitalRead(MANUALMODE);
     overrideButton.update();
     if (overrideButton.fallingEdge()) {
       powerOverride = !powerOverride;
@@ -69,7 +69,7 @@ void loop() {
 
   if (powerGood) {
     if (manualMode) {
-      Timer1.setPwmDuty(LEDOUT, map(analogRead(MULTIPLIER), 0, 1024, 255, 0));
+      Timer1.setPwmDuty(LEDOUT, analogRead(MULTIPLIER));
     }
     else {    
       // If sound detected, restart countdown and fade in.
@@ -86,7 +86,7 @@ void loop() {
 
       // Measure light intensity, map to output power (through adjustment pot).
       int lightLevel = analogRead(LIGHTSENSOR);
-      Timer1.setPwmDuty(LEDOUT, map(lightLevel, 0, 1024, 255, 0) * analogRead(MULTIPLIER)/1024);
+      Timer1.setPwmDuty(LEDOUT, map(lightLevel, 0, 1023, 1023, 1));
     }
   }  
   else {
