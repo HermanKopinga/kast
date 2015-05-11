@@ -90,7 +90,7 @@ void loop() {
     }
   }  
   else {
-    digitalWrite(LEDOUT, 0);
+    Timer1.setPwmDuty(LEDOUT, 0);
   }
 }
 
