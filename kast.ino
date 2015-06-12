@@ -19,21 +19,21 @@
 
 // Globals
 int blinkBreak = 1000;
-int ledLevel = 0;
+int ledLevel = 300;
 unsigned long previousBlink = 0;
 unsigned long previousLevelCheck = 0;
 unsigned long soundTime = 0;
-//unsigned long silentTime = 900000; // 15 minutes
-unsigned long silentTime = 24000; // 15 minutes
-unsigned long fadeTime = 9000;
-unsigned long levelCheckBreak = 12000;
+unsigned long silentTime = 900000; // 900000 = 15 minutes
+unsigned long fadeTime = 15000;
+unsigned long levelCheckBreak = 30000;
+const int maxLight = 800;
 LEDFader led = LEDFader(4);
 bool manualMode = 0;
 bool voltageGood = 0;
 bool powerOverride = 0;
 Bounce overrideButton = Bounce(OVERRIDE, 20);   
 // For the averaging of the sound sensor
-const int numReadings = 5;
+const int numReadings = 3;
 int readings[numReadings];      // the readings from the analog input
 int avgIndex = 0;                  // the index of the current reading
 int total = 0;                  // the running total
@@ -72,16 +72,29 @@ void loop() {
     Serial.print(" ");
     Serial.println(ledLevel);
     digitalWrite(STATUSLED, !digitalRead(STATUSLED));
-
+    
     // Auto shut off if supply voltage is below ~11.8v.
     // Measured using 4.7k/10k voltage divider on A8.
-    if (analogRead(POWERSENSE) > 770 || powerOverride) {
-      blinkBreak = 1000;
-      voltageGood = 1;
-    } 
+    // Only restart if power is above ~12v otherwise the LEDs blink with a 1Hz frequency.
+    if (voltageGood) {
+      if (analogRead(POWERSENSE) > 770 || powerOverride) {
+        blinkBreak = 1000;
+        voltageGood = 1;
+      } 
+      else {
+        blinkBreak = 50;
+        voltageGood = 0;
+      }
+    }
     else {
-      blinkBreak = 50;
-      voltageGood = 0;
+      if (analogRead(POWERSENSE) > 810 || powerOverride) {
+        blinkBreak = 1000;
+        voltageGood = 1;
+      } 
+      else {
+        blinkBreak = 50;
+        voltageGood = 0;
+      }
     }
 
     // Handle the two buttons:
@@ -143,7 +156,6 @@ void loop() {
       } 
       else if (ledLevel > 0) {
         if ((unsigned long)(currentMillis - soundTime) >= silentTime) {
-          // Todo: fadeout 15 sec
           ledLevel = 0;
           led.fade(ledLevel, fadeTime);
           Serial.println("Timeout");
@@ -153,8 +165,7 @@ void loop() {
           previousLevelCheck = currentMillis;
           // Measure light intensity, map to output power (through adjustment pot).
           int lightLevel = analogRead(LIGHTSENSOR);
-          // Todo: fadein 15 sec
-          ledLevel = map(lightLevel, 0, 1023, 1023, 0);
+          ledLevel = map(lightLevel, 0, 1023, maxLight, 3);
           Serial.print("LL: ");
           Serial.println(lightLevel);
           led.fade(ledLevel, fadeTime);         
